@@ -1,10 +1,19 @@
 import request from "supertest";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from "../src/app.js";
+
+dotenv.config({ path: ".env.test" });
 
 let token;
 let taskId;
+let mongoServer;
 
 beforeAll(async () => {
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+  await mongoose.connect(uri);
   // Register
   await request(app)
     .post("/api/auth/register")
@@ -58,4 +67,10 @@ describe("Task Routes", () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 
+});
+
+afterAll(async () => {
+  await mongoose.connection.dropDatabase();
+  await mongoose.connection.close();
+  await mongoServer.stop();
 });
